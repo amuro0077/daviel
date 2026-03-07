@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[다비엘 놀이터] 이미지 분할 확대기</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff9f43;
+            --zip-color: #10ac84; 
+            --ppt-color: #ff6b6b; 
+            --bg-color: #fff9ea;
+            --panel-bg: #ffffff;
+            --border-color: #ffeaa7;
+        }
+
+        body {
+            font-family: 'Jua', sans-serif;
+            background-color: var(--bg-color);
+            color: #444;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 30px 20px;
+        }
+
+        header { margin-bottom: 25px; text-align: center; }
+        h1 { margin: 0; font-size: 2.2rem; color: #ff9f43; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+        p { margin: 8px 0 0; color: #888; font-size: 1.1rem; }
+
+        .controls {
+            background: var(--panel-bg);
+            padding: 25px 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(255, 159, 67, 0.15);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            align-items: flex-end;
+            justify-content: center;
+            margin-bottom: 25px;
+            width: 100%;
+            max-width: 1200px;
+            border: 2px solid var(--border-color);
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 10px; }
+        .control-group label { font-size: 1.1rem; color: #555; }
+
+        .scale-control-wrapper { display: flex; gap: 8px; align-items: center; }
+        #customScaleInput { width: 80px; padding: 10px; border: 2px solid var(--primary-color); border-radius: 10px; display: none; font-family: 'Jua', sans-serif; }
+
+        .mini-btn { padding: 10px 15px; background-color: #c8d6e5; color: #333; border: none; border-radius: 10px; cursor: pointer; font-family: 'Jua', sans-serif; font-size: 1rem; }
+        .mini-btn:hover { background-color: #8395a7; color: white; }
+
+        select, input[type="file"], input[type="number"] { padding: 10px 15px; border: 2px solid #eee; border-radius: 10px; font-size: 1rem; font-family: 'Jua', sans-serif; }
+        select:focus, input:focus { outline: none; border-color: var(--primary-color); }
+
+        .toggle-group { display: flex; align-items: center; gap: 15px; padding: 5px 0; font-size: 1.1rem; }
+
+        .save-btns { display: flex; gap: 15px; flex-wrap: wrap; }
+        
+        .btn {
+            padding: 12px 28px; color: white; border: none; border-radius: 30px;
+            cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; gap: 8px; font-size: 1.2rem;
+            font-family: 'Jua', sans-serif;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn-ppt { background-color: var(--ppt-color); }
+        .btn-zip { background-color: var(--zip-color); }
+
+        .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        .btn:active:not(:disabled) { transform: translateY(0); }
+        .btn:disabled { opacity: 0.5; filter: grayscale(50%); cursor: not-allowed; box-shadow: none; }
+
+        .preview-area {
+            width: 100%;
+            max-width: 1000px;
+            aspect-ratio: 3 / 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #fdfbf7;
+            border-radius: 20px;
+            border: 4px dashed #ffb142;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 30px;
+            max-height: 65vh;
+        }
+
+        .canvas-container {
+            position: relative; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
+        }
+
+        canvas {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background-color: white;
+            max-width: 100%; max-height: 100%;
+            width: auto; height: auto; object-fit: contain;
+            border-radius: 8px;
+        }
+        
+        #statusMsg {
+            margin-top: 10px; padding: 12px 25px; border-radius: 30px;
+            font-size: 1.2rem; color: white; background: var(--primary-color);
+            box-shadow: 0 4px 10px rgba(255, 159, 67, 0.3); margin-bottom: 20px;
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal { background: white; padding: 40px; border-radius: 25px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 15px 30px rgba(0,0,0,0.2); }
+        .modal h3 { margin-top: 0; color: #ff9f43; font-size: 1.8rem; }
+        .modal p { font-size: 1.1rem; color: #666; line-height: 1.5; }
+        .modal-btns { display: flex; gap: 15px; justify-content: center; margin-top: 30px; }
+        .modal-btn { padding: 12px 30px; border: none; border-radius: 20px; cursor: pointer; font-size: 1.2rem; font-family: 'Jua', sans-serif; }
+        .btn-confirm { background: var(--primary-color); color: white; }
+        .btn-cancel { background: #f1f2f6; color: #555; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🎨 [다비엘 놀이터] 이미지 확대 & 분할기</h1>
+        <p>작은 도안을 크고 선명하게! 원하는 용지 크기로 나누어 저장해.</p>
+    </header>
+
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal">
+            <h3 id="modalTitle">저장할까?</h3>
+            <p id="modalBody"></p>
+            <div class="modal-btns">
+                <button id="modalConfirm" class="modal-btn btn-confirm">응, 시작해!</button>
+                <button id="modalCancel" class="modal-btn btn-cancel">잠깐만</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>📂 1. 도안 올리기</label>
+            <input type="file" id="upload" accept="image/*">
+        </div>
+
+        <div class="control-group">
+            <label>📄 2. 용지 크기</label>
+            <select id="paperSize">
+                <option value="A4" selected>A4 용지</option>
+                <option value="A3">A3 용지</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>🔍 3. 얼마나 키울까?</label>
+            <div class="scale-control-wrapper">
+                <select id="scale">
+                    <option value="1">100% (원본)</option>
+                    <option value="1.5">150%</option>
+                    <option value="2" selected>200% (2x2)</option>
+                    <option value="3">300% (3x3)</option>
+                    <option value="4">400% (4x4)</option>
+                    <option value="6">600%</option>
+                    <option value="8">800%</option>
+                    <option value="custom">직접입력</option>
+                </select>
+                <input type="number" id="customScaleInput" min="1" max="32" step="0.1" value="2.0">
+                <button id="resetScaleBtn" class="mini-btn">원래대로</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>👀 4. 보는 방식</label>
+            <div class="toggle-group">
+                <label><input type="radio" name="mode" value="full" checked> 조각 보기</label>
+                <label><input type="radio" name="mode" value="loupe"> 돋보기</label>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>✨ 5. 선명하게</label>
+            <div class="toggle-group">
+                <label><input type="checkbox" id="smoothing" checked> 부드러운 선</label>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>💾 6. 다운로드</label>
+            <div class="save-btns">
+                <button id="pptSaveBtn" class="btn btn-ppt" disabled>📊 PPT로 받기</button>
+                <button id="zipSaveBtn" class="btn btn-zip" disabled>📂 그림(ZIP)으로 받기</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusMsg">먼저 예쁜 도안 이미지를 올려줘!</div>
+
+    <div class="preview-area" id="previewArea">
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const uploadInput = document.getElementById('upload');
+        const paperSizeSelect = document.getElementById('paperSize');
+        const scaleSelect = document.getElementById('scale');
+        const customScaleInput = document.getElementById('customScaleInput');
+        const resetScaleBtn = document.getElementById('resetScaleBtn');
+        const modeRadios = document.querySelectorAll('input[name="mode"]');
+        const smoothingCheck = document.getElementById('smoothing');
+        const zipSaveBtn = document.getElementById('zipSaveBtn');
+        const pptSaveBtn = document.getElementById('pptSaveBtn');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statusMsg = document.getElementById('statusMsg');
+        const previewArea = document.getElementById('previewArea');
+
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const modalConfirm = document.getElementById('modalConfirm');
+        const modalCancel = document.getElementById('modalCancel');
+
+        let originalImage = new Image();
+        let isImageLoaded = false;
+        let loupePos = { x: 0, y: 0 };
+        let isMouseInCanvas = false;
+
+        const LOUPE_RADIUS = 120;
+        const PREVIEW_MAX_SIZE = 1600; 
+        const PREVIEW_GAP = 8;        
+
+        function getZoomScale() {
+            if (scaleSelect.value === 'custom') {
+                let val = parseFloat(customScaleInput.value);
+                return (isNaN(val) || val < 1) ? 1 : (val > 32 ? 32 : val);
+            }
+            return parseFloat(scaleSelect.value);
+        }
+
+        uploadInput.onchange = handleFileUpload;
+        paperSizeSelect.onchange = () => { updateStatus(); };
+        scaleSelect.onchange = () => {
+            customScaleInput.style.display = (scaleSelect.value === 'custom') ? 'block' : 'none';
+            render();
+            updateStatus();
+        };
+        customScaleInput.oninput = () => { render(); updateStatus(); };
+        resetScaleBtn.onclick = () => {
+            scaleSelect.value = "1";
+            customScaleInput.style.display = 'none';
+            render();
+            updateStatus();
+        };
+        smoothingCheck.onchange = render;
+        modeRadios.forEach(r => r.onchange = () => { render(); updateStatus(); });
+
+        canvas.onmousemove = (e) => {
+            if (!isImageLoaded) return;
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            if (mode === 'loupe') {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                loupePos.x = (e.clientX - rect.left) * scaleX;
+                loupePos.y = (e.clientY - rect.top) * scaleY;
+                isMouseInCanvas = true;
+                drawLoupe();
+            }
+        };
+        canvas.onmouseenter = () => isMouseInCanvas = true;
+        canvas.onmouseleave = () => { isMouseInCanvas = false; render(); };
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                originalImage = new Image();
+                originalImage.onload = () => {
+                    isImageLoaded = true;
+                    const ratio = originalImage.width / originalImage.height;
+                    previewArea.style.aspectRatio = `${originalImage.width} / ${originalImage.height}`;
+                    previewArea.style.width = ratio < 1 ? 'auto' : '100%';
+                    [zipSaveBtn, pptSaveBtn].forEach(b => b.disabled = false);
+                    render();
+                    updateStatus();
+                };
+                originalImage.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function render() {
+            if (!isImageLoaded) return;
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            if (mode === 'full') drawFullZoomGrid(); else drawLoupe();
+        }
+
+        function drawFullZoomGrid() {
+            const scale = getZoomScale();
+            const n = Math.ceil(scale);
+            let baseW = originalImage.width;
+            let baseH = originalImage.height;
+            if (baseW > PREVIEW_MAX_SIZE || baseH > PREVIEW_MAX_SIZE) {
+                const limitScale = PREVIEW_MAX_SIZE / Math.max(baseW, baseH);
+                baseW *= limitScale;
+                baseH *= limitScale;
+            }
+            const gapTotal = n > 1 ? PREVIEW_GAP * (n - 1) : 0;
+            canvas.width = baseW + gapTotal;
+            canvas.height = baseH + gapTotal;
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.imageSmoothingEnabled = smoothingCheck.checked;
+            const tileW = baseW / n;
+            const tileH = baseH / n;
+            const sourceW = originalImage.width / n;
+            const sourceH = originalImage.height / n;
+            for (let r = 0; r < n; r++) {
+                for (let c = 0; c < n; c++) {
+                    ctx.drawImage(originalImage, c*sourceW, r*sourceH, sourceW, sourceH, c*(tileW+PREVIEW_GAP), r*(tileH+PREVIEW_GAP), tileW, tileH);
+                }
+            }
+        }
+
+        function drawLoupe() {
+            let displayW = originalImage.width;
+            let displayH = originalImage.height;
+            const limit = PREVIEW_MAX_SIZE;
+            if (displayW > limit || displayH > limit) {
+                const s = limit / Math.max(displayW, displayH);
+                displayW *= s;
+                displayH *= s;
+            }
+            canvas.width = displayW;
+            canvas.height = displayH;
+            ctx.imageSmoothingEnabled = smoothingCheck.checked;
+            ctx.drawImage(originalImage, 0, 0, displayW, displayH);
+            if (isMouseInCanvas) {
+                const scale = getZoomScale();
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(loupePos.x, loupePos.y, LOUPE_RADIUS, 0, Math.PI * 2);
+                ctx.clip();
+                const rx = loupePos.x / displayW;
+                const ry = loupePos.y / displayH;
+                const zoomW = displayW * scale;
+                const zoomH = displayH * scale;
+                const dx = loupePos.x - (zoomW * rx);
+                const dy = loupePos.y - (zoomH * ry);
+                ctx.drawImage(originalImage, dx, dy, zoomW, zoomH);
+                ctx.restore();
+                ctx.beginPath();
+                ctx.arc(loupePos.x, loupePos.y, LOUPE_RADIUS, 0, Math.PI * 2);
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = "#ff9f43";
+                ctx.stroke();
+            }
+        }
+
+        function confirmAction(type, onConfirm) {
+            const n = Math.ceil(getZoomScale());
+            const paper = paperSizeSelect.value;
+            modalTitle.textContent = `${type} 저장 확인`;
+            modalBody.innerHTML = `현재 방향에 맞춰 <strong>${paper} 용지</strong>로 총 <strong>${n*n}장</strong>이 만들어져. 계속 진행할까?`;
+            modalOverlay.style.display = 'flex';
+            modalConfirm.onclick = () => { modalOverlay.style.display='none'; onConfirm(); };
+            modalCancel.onclick = () => { modalOverlay.style.display='none'; };
+        }
+
+        zipSaveBtn.onclick = () => confirmAction('JPG(ZIP)', saveZip);
+        pptSaveBtn.onclick = () => confirmAction('PPT', savePpt);
+
+        async function savePpt() {
+            const scale = getZoomScale();
+            const n = Math.ceil(scale);
+            const pptx = new PptxGenJS();
+            const isLandscape = originalImage.width >= originalImage.height;
+            const paper = paperSizeSelect.value;
+
+            if (paper === 'A3') {
+                pptx.defineLayout({ name: 'A3_L', width: 16.54, height: 11.69 });
+                pptx.defineLayout({ name: 'A3_P', width: 11.69, height: 16.54 });
+                pptx.layout = isLandscape ? 'A3_L' : 'A3_P';
+            } else {
+                pptx.defineLayout({ name: 'A4_L', width: 11.69, height: 8.27 });
+                pptx.defineLayout({ name: 'A4_P', width: 8.27, height: 11.69 });
+                pptx.layout = isLandscape ? 'A4_L' : 'A4_P';
+            }
+
+            statusMsg.textContent = "⚙️ PPT 만드는 중...";
+            const tempCanvas = document.createElement('canvas');
+            const tctx = tempCanvas.getContext('2d');
+            tempCanvas.width = originalImage.width;
+            tempCanvas.height = originalImage.height;
+
+            const totalTiles = n * n;
+            let currentCount = 0;
+
+            for (let r = 0; r < n; r++) {
+                for (let c = 0; c < n; c++) {
+                    currentCount++;
+                    statusMsg.textContent = `⚙️ 슬라이드 생성 중... (${currentCount} / ${totalTiles})`;
+                    await new Promise(resolve => setTimeout(resolve, 0));
+
+                    tctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+                    tctx.imageSmoothingEnabled = smoothingCheck.checked;
+                    tctx.drawImage(originalImage, (c*originalImage.width)/scale, (r*originalImage.height)/scale, originalImage.width/scale, originalImage.height/scale, 0, 0, tempCanvas.width, tempCanvas.height);
+                    
+                    const slide = pptx.addSlide();
+                    slide.addImage({ 
+                        data: tempCanvas.toDataURL('image/jpeg', 0.9), 
+                        x: 0, y: 0, w: '100%', h: '100%' 
+                    });
+                }
+            }
+            pptx.writeFile({ fileName: `[다비엘놀이터]_확대PPT_${scale}배_${paper}.pptx` }).then(updateStatus);
+        }
+
+        async function saveZip() {
+            const scale = getZoomScale();
+            const n = Math.ceil(scale);
+            const zip = new JSZip();
+            statusMsg.textContent = "⚙️ 그림 파일 압축 중...";
+            const tempCanvas = document.createElement('canvas');
+            const tctx = tempCanvas.getContext('2d');
+            tempCanvas.width = originalImage.width;
+            tempCanvas.height = originalImage.height;
+
+            const totalTiles = n * n;
+            let currentCount = 0;
+
+            for (let r = 0; r < n; r++) {
+                for (let c = 0; c < n; c++) {
+                    currentCount++;
+                    statusMsg.textContent = `⚙️ 조각 저장 중... (${currentCount} / ${totalTiles})`;
+                    await new Promise(resolve => setTimeout(resolve, 0));
+
+                    tctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+                    tctx.imageSmoothingEnabled = smoothingCheck.checked;
+                    tctx.drawImage(originalImage, (c*originalImage.width)/scale, (r*originalImage.height)/scale, originalImage.width/scale, originalImage.height/scale, 0, 0, tempCanvas.width, tempCanvas.height);
+                    const blob = await new Promise(res => tempCanvas.toBlob(res, 'image/jpeg', 0.9));
+                    zip.folder("images").file(`[다비엘놀이터]_조각_${r+1}_${c+1}.jpg`, blob);
+                }
+            }
+            const content = await zip.generateAsync({type: "blob"});
+            saveAs(content, `[다비엘놀이터]_도안조각_${scale}배.zip`);
+            updateStatus();
+        }
+
+        function updateStatus() {
+            if (!isImageLoaded) return;
+            const scale = getZoomScale();
+            const n = Math.ceil(scale);
+            const dirText = originalImage.width >= originalImage.height ? "가로형" : "세로형";
+            const paper = paperSizeSelect.value;
+            statusMsg.textContent = `현재 설정: ${scale}배율 (${dirText} ${paper} 사이즈 / 총 ${n*n}조각 완성!)`;
+        }
+    </script>
+</body>
+</html>
