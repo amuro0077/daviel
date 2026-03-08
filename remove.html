@@ -47,14 +47,15 @@
             if (!file) return;
 
             status.style.color = '#ff9f43';
-            status.textContent = "⏳ 배경 지우는 중! (AI 데이터를 다운받느라 처음엔 1~2분 걸려!)";
+            status.textContent = "⏳ 배경 지우는 중! (처음엔 10~20초 정도 걸려!)";
             resultImg.style.display = 'none';
             downloadBtn.style.display = 'none';
 
             try {
-                // 데이터 주소도 동일한 jsdelivr 서버로 맞춰서 다운로드 차단(Failed to fetch) 방지
+                // 용량 제한에 걸리지 않도록 가벼운 'small' 모델 지정 및 공식 서버 사용
                 const config = {
-                    publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.4.3/dist/"
+                    publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.4.3/dist/",
+                    model: "small"
                 };
                 
                 const blob = await imglyRemoveBackground(file, config);
@@ -67,7 +68,7 @@
                 status.textContent = "✨ 짠! 완벽하게 지워졌지?";
             } catch (error) {
                 status.style.color = '#ff6b6b';
-                status.textContent = "❌ 오류: 인터넷 연결 문제거나 브라우저 광고 차단기 때문일 수 있어!";
+                status.textContent = "❌ 오류: " + error.message;
                 console.error(error);
             }
         });
