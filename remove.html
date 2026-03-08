@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[다비엘 놀이터] 뚝딱! 배경 지우개</title>
+    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/dist/imgly-background-removal.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-color: #ff9f43; --bg-color: #fff9ea; }
+        body { font-family: 'Jua', sans-serif; background-color: var(--bg-color); text-align: center; padding: 30px 20px; color: #444; }
+        h1 { color: var(--primary-color); font-size: 2.2rem; }
+        .container { background: white; max-width: 600px; margin: 0 auto; padding: 30px; border-radius: 20px; box-shadow: 0 8px 20px rgba(255,159,67,0.15); border: 2px solid #ffeaa7; }
+        input[type="file"] { margin: 20px 0; padding: 10px; border: 2px dashed var(--primary-color); border-radius: 10px; width: 100%; box-sizing: border-box; cursor: pointer; }
+        .btn { padding: 15px 30px; font-size: 1.2rem; font-family: 'Jua', sans-serif; color: white; background-color: #10ac84; border: none; border-radius: 30px; cursor: pointer; display: none; margin: 20px auto 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn:hover { transform: translateY(-2px); }
+        #status { margin: 15px 0; font-size: 1.2rem; color: #ff6b6b; }
+        .preview-box { width: 100%; min-height: 300px; border: 4px dashed #ddd; border-radius: 15px; display: flex; align-items: center; justify-content: center; margin-top: 20px; background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/ENF5gBgxYBQMBIPoEADpUqNGAQBcKwh1sK041AAAAABJRU5ErkJggg=='); }
+        img { max-width: 100%; max-height: 400px; display: none; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <h1>✂️ [다비엘 놀이터] 뚝딱! 배경 지우개</h1>
+    <p>사진을 올리면 AI가 알아서 배경을 투명하게 지워줘!</p>
+    
+    <div class="container">
+        <input type="file" id="upload" accept="image/*">
+        <div id="status">여기에 사진을 올려봐!</div>
+        
+        <div class="preview-box">
+            <img id="resultImg" alt="결과 이미지">
+        </div>
+        
+        <button id="downloadBtn" class="btn">💾 투명 배경(PNG)으로 저장하기</button>
+    </div>
+
+    <script>
+        const upload = document.getElementById('upload');
+        const status = document.getElementById('status');
+        const resultImg = document.getElementById('resultImg');
+        const downloadBtn = document.getElementById('downloadBtn');
+        let resultUrl = '';
+
+        upload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            status.textContent = "⏳ AI가 배경을 지우는 중이야... (처음엔 10~20초 정도 걸릴 수 있어!)";
+            resultImg.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            try {
+                const config = {
+                    publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.4.3/dist/"
+                };
+                const blob = await imglyRemoveBackground(file, config);
+                resultUrl = URL.createObjectURL(blob);
+                
+                resultImg.src = resultUrl;
+                resultImg.style.display = 'block';
+                downloadBtn.style.display = 'block';
+                status.textContent = "✨ 짠! 완벽하게 지워졌지?";
+            } catch (error) {
+                status.textContent = "❌ 앗, 오류가 났어. 다른 사진으로 다시 시도해봐!";
+                console.error(error);
+            }
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const a = document.createElement('a');
+            a.href = resultUrl;
+            a.download = '[다비엘놀이터]_투명배경.png';
+            a.click();
+        });
+    </script>
+</body>
+</html>
