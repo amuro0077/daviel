@@ -8,15 +8,38 @@
     <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <style>
         :root { --primary-color: #ff9f43; --bg-color: #fff9ea; }
-        body { font-family: 'Jua', sans-serif; background-color: var(--bg-color); text-align: center; padding: 30px 20px; color: #444; }
-        h1 { color: var(--primary-color); font-size: 2.2rem; }
+        body { font-family: 'Jua', sans-serif; background-color: var(--bg-color); text-align: center; padding: 30px 20px; color: #444; margin: 0; }
+        h1 { color: var(--primary-color); font-size: 2.2rem; margin-bottom: 5px; }
+        p { color: #666; font-size: 1.1rem; margin-top: 0; }
+        
         .container { background: white; max-width: 600px; margin: 0 auto; padding: 30px; border-radius: 20px; box-shadow: 0 8px 20px rgba(255,159,67,0.15); border: 2px solid #ffeaa7; }
-        input[type="file"] { margin: 20px 0; padding: 10px; border: 2px dashed var(--primary-color); border-radius: 10px; width: 100%; box-sizing: border-box; cursor: pointer; }
-        .btn { padding: 15px 30px; font-size: 1.2rem; font-family: 'Jua', sans-serif; color: white; background-color: #10ac84; border: none; border-radius: 30px; cursor: pointer; display: none; margin: 20px auto 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn:hover { transform: translateY(-2px); }
-        #status { margin: 15px 0; font-size: 1.2rem; color: #ff6b6b; }
-        .preview-box { width: 100%; min-height: 300px; border: 4px dashed #ddd; border-radius: 15px; display: flex; align-items: center; justify-content: center; margin-top: 20px; background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/ENF5gBgxYBQMBIPoEADpUqNGAQBcKwh1sK041AAAAABJRU5ErkJggg=='); }
-        img { max-width: 100%; max-height: 400px; display: none; border-radius: 10px; }
+        input[type="file"] { margin: 20px 0; padding: 10px; border: 2px dashed var(--primary-color); border-radius: 10px; width: 100%; box-sizing: border-box; cursor: pointer; font-family: 'Jua', sans-serif; }
+        
+        .btn { padding: 15px 30px; font-size: 1.2rem; font-family: 'Jua', sans-serif; color: white; background-color: #10ac84; border: none; border-radius: 30px; cursor: pointer; display: none; margin: 20px auto 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        
+        #status { margin: 15px 0; font-size: 1.2rem; color: #ff6b6b; font-weight: bold; }
+        
+        /* 이상한 물결 대신 깔끔한 CSS 바둑판 무늬로 수정! */
+        .preview-box { 
+            width: 100%; 
+            min-height: 300px; 
+            border: 4px dashed #ddd; 
+            border-radius: 15px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin-top: 20px; 
+            background-color: #ffffff;
+            background-image: 
+                linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0),
+                linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            overflow: hidden;
+        }
+        
+        img { max-width: 100%; max-height: 400px; display: none; border-radius: 10px; object-fit: contain; }
     </style>
 </head>
 <body>
@@ -50,10 +73,11 @@
             downloadBtn.style.display = 'none';
 
             try {
-                // 이 부분 주소 오타를 수정했어! (staticimgly.com)
+                // 제일 안정적인 jsdelivr CDN 주소로 변경
                 const config = {
-                    publicPath: "https://staticimgly.com/@imgly/background-removal-data/1.4.3/dist/"
+                    publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.4.3/dist/"
                 };
+                
                 const blob = await imglyRemoveBackground(file, config);
                 resultUrl = URL.createObjectURL(blob);
                 
@@ -63,7 +87,7 @@
                 status.textContent = "✨ 짠! 완벽하게 지워졌지?";
             } catch (error) {
                 status.textContent = "❌ 앗, 오류가 났어. 다른 사진으로 다시 시도해봐!";
-                console.error(error);
+                console.error("오류 상세 내용:", error);
             }
         });
 
