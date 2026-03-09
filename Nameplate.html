@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>[다비엘] 뚝딱! 이름표 생성기</title>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu&family=Gowun+Dodum&family=Jua&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Cafe24Dongdong';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_twelve@1.1/Cafe24Dongdong.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        body { font-family: 'Jua', sans-serif; background-color: #fff9ea; text-align: center; padding: 20px; margin: 0; }
+        .container { background: white; max-width: 800px; margin: 0 auto; padding: 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        textarea { width: 90%; height: 100px; padding: 10px; border: 2px solid #ff9f43; border-radius: 10px; font-family: inherit; font-size: 16px; margin-bottom: 10px; }
+        
+        .settings-panel { 
+            background: #fdfdfd; border: 2px dashed #ffb86c; border-radius: 10px; padding: 15px; margin-bottom: 20px; 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; align-items: center;
+        }
+        .settings-panel div { display: flex; flex-direction: column; }
+        .settings-panel label { font-size: 14px; font-family: sans-serif; color: #555; font-weight: bold; margin-bottom: 5px; }
+        .settings-panel input, .settings-panel select { padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-family: inherit; }
+        .settings-panel input[type="color"] { padding: 2px; height: 35px; width: 100%; cursor: pointer; }
+        
+        input[type="file"] { margin: 10px 0; padding: 10px; border: 2px dashed #10ac84; border-radius: 10px; width: 90%; cursor: pointer; }
+
+        .preview-area { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 30px; }
+        .tag { 
+            position: relative; width: 300px; height: 150px; 
+            background-color: #ffffff; border: 1px dashed #ddd; border-radius: 10px;
+            display: flex; justify-content: center; padding: 15px; box-sizing: border-box;
+            background-size: cover; background-position: center;
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important; 
+        }
+        .tag-name { 
+            font-weight: bold; z-index: 10; text-align: center;
+            paint-order: stroke fill; 
+        }
+
+        .btn { padding: 12px 25px; background: #ff9f43; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 5px; font-family: 'Jua'; font-size: 18px; transition: 0.2s; }
+        .btn:hover { transform: scale(1.05); }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .no-print { display: none !important; }
+            .container { box-shadow: none; width: 100%; max-width: none; padding: 0; }
+            .preview-area { border: none; margin: 0; gap: 10px; }
+            .tag { border: 1px dotted #ccc; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <h1>🏷️ 다비엘 놀이터 뚝딱! 이름표 생성기</h1>
+        <div class="container">
+            <p>1. 배경으로 쓸 도안 이미지를 먼저 불러와줘!</p>
+            <input type="file" id="bgUpload" accept="image/*">
+            
+            <div class="settings-panel">
+                <div>
+                    <label>🎨 배경 연하게 조절 (<span id="opacityValue">50</span>%)</label>
+                    <input type="range" id="opacitySlider" min="0" max="100" value="50">
+                </div>
+                <div>
+                    <label>🔠 글씨체 선택</label>
+                    <select id="fontSelect">
+                        <option value="'Cafe24Dongdong', sans-serif">카페24 동동 (통통하고 귀여움)</option>
+                        <option value="'Jua', sans-serif">주아체 (동글동글)</option>
+                        <option value="'Gaegu', cursive">개구쟁이 (귀여움)</option>
+                        <option value="'Nanum Pen Script', cursive">나눔펜 (손글씨)</option>
+                        <option value="'Gowun Dodum', sans-serif">고운돋움 (깔끔함)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>🔎 이름 크기 (<span id="fontSizeValue">40</span>px)</label>
+                    <input type="range" id="fontSizeSlider" min="20" max="80" value="40">
+                </div>
+                <div>
+                    <label>⬆️⬇️ 이름 위치</label>
+                    <select id="posSelect">
+                        <option value="center">가운데 정렬</option>
+                        <option value="flex-start">위쪽으로</option>
+                        <option value="flex-end">아래쪽으로</option>
+                    </select>
+                </div>
+                <div>
+                    <label>📏 테두리 굵기 (<span id="strokeWidthValue">3</span>px)</label>
+                    <input type="range" id="strokeWidthSlider" min="0" max="10" value="3">
+                </div>
+                <div style="flex-direction: row; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>🖍️ 글자 색상</label>
+                        <input type="color" id="textColor" value="#111111">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>⚪ 테두리 색상</label>
+                        <input type="color" id="borderColor" value="#ffffff">
+                    </div>
+                </div>
+                <div style="flex-direction: row; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>앞에 붙일 말 (예: 햇살반)</label>
+                        <input type="text" id="prefix" placeholder="비워둬도 돼!">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>뒤에 붙일 말 (예: 어린이)</label>
+                        <input type="text" id="suffix" placeholder="비워둬도 돼!">
+                    </div>
+                </div>
+            </div>
+            
+            <p style="font-size: 18px; color: #ff5252; margin-bottom: 5px;">2. 이름을 적고 <b>엔터(Enter)를 눌러서</b> 다음 사람을 쭉쭉 적어주세요!</p>
+            <textarea id="nameInput" placeholder="김민하&#10;박소영&#10;최재성"></textarea>
+            
+            <div>
+                <button class="btn" onclick="generateTags()">✨ 이름표 만들기</button>
+                <button class="btn" style="background:#10ac84" onclick="window.print()">🖨️ 깔끔하게 인쇄하기</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="preview-area" id="preview"></div>
+
+    <script>
+        let bgImageUrl = ""; 
+        
+        const opacitySlider = document.getElementById('opacitySlider');
+        const opacityValueText = document.getElementById('opacityValue');
+        const fontSelect = document.getElementById('fontSelect');
+        const fontSizeSlider = document.getElementById('fontSizeSlider');
+        const fontSizeValueText = document.getElementById('fontSizeValue');
+        const posSelect = document.getElementById('posSelect');
+        const strokeWidthSlider = document.getElementById('strokeWidthSlider');
+        const strokeWidthValueText = document.getElementById('strokeWidthValue');
+        const textColor = document.getElementById('textColor');
+        const borderColor = document.getElementById('borderColor');
+        const prefixInput = document.getElementById('prefix');
+        const suffixInput = document.getElementById('suffix');
+
+        const autoUpdateElements = [opacitySlider, fontSelect, fontSizeSlider, posSelect, strokeWidthSlider, textColor, borderColor, prefixInput, suffixInput];
+        autoUpdateElements.forEach(el => el.addEventListener('input', generateTags));
+
+        document.getElementById('bgUpload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                bgImageUrl = URL.createObjectURL(file);
+                generateTags(); 
+            }
+        });
+
+        function generateTags() {
+            opacityValueText.innerText = opacitySlider.value;
+            fontSizeValueText.innerText = fontSizeSlider.value;
+            strokeWidthValueText.innerText = strokeWidthSlider.value;
+            
+            const input = document.getElementById('nameInput').value;
+            const names = input.split('\n').filter(name => name.trim() !== "");
+            const preview = document.getElementById('preview');
+            preview.innerHTML = ""; 
+
+            const fadePercent = opacitySlider.value / 100;
+
+            names.forEach(name => {
+                const tag = document.createElement('div');
+                tag.className = 'tag';
+                tag.style.alignItems = posSelect.value;
+                
+                if (bgImageUrl) {
+                    tag.style.backgroundImage = `linear-gradient(rgba(255, 255, 255, ${fadePercent}), rgba(255, 255, 255, ${fadePercent})), url('${bgImageUrl}')`;
+                }
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'tag-name';
+                
+                const prefix = prefixInput.value.trim() ? prefixInput.value.trim() + " " : "";
+                const suffix = suffixInput.value.trim() ? " " + suffixInput.value.trim() : "";
+                nameSpan.innerText = prefix + name.trim() + suffix;
+                
+                nameSpan.style.fontFamily = fontSelect.value;
+                nameSpan.style.fontSize = `${fontSizeSlider.value}px`;
+                nameSpan.style.color = textColor.value;
+                
+                nameSpan.style.webkitTextStroke = `${strokeWidthSlider.value}px ${borderColor.value}`;
+                
+                tag.appendChild(nameSpan);
+                preview.appendChild(tag);
+            });
+        }
+    </script>
+</body>
+</html>
