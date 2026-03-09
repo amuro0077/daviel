@@ -5,7 +5,6 @@
     <title>[다비엘] 글자 스티커 메이커 PRO</title>
     <link href="https://fonts.googleapis.com/css2?family=Gaegu&family=Gowun+Dodum&family=Jua&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
     <style>
-        /* ⭐ 카페24 동동체 웹 폰트 불러오기 (눈누) */
         @font-face {
             font-family: 'Cafe24Dongdong';
             src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_twelve@1.1/Cafe24Dongdong.woff') format('woff');
@@ -95,7 +94,7 @@
 
             <div style="grid-column: span 2;">
                 <label>✏️ 만들고 싶은 문구</label>
-                <textarea id="textInput" placeholder="함께 만드는 자리&#10;깊게 만들기">함께 만드는 자리&#10;깊게 만들기</textarea>
+                <textarea id="textInput" placeholder="다비엘 놀이터에서&#10;함께 놀아보아요">다비엘 놀이터에서&#10;함께 놀아보아요</textarea>
             </div>
 
             <div>
@@ -119,17 +118,17 @@
 
             <div>
                 <label>⚪ 테두리 색상</label>
-                <input type="color" id="strokeColor" value="#ffffff">
+                <input type="color" id="strokeColor" value="#31100b">
             </div>
 
             <div>
-                <label>📏 테두리 두께 (<span id="strokeVal">15</span>px)</label>
-                <input type="range" id="strokeSlider" min="0" max="40" value="15">
+                <label>📏 테두리 두께 (<span id="strokeVal">29</span>px)</label>
+                <input type="range" id="strokeSlider" min="0" max="50" value="29">
             </div>
 
             <div>
-                <label>↕️ 위아래 줄 간격 (<span id="lineHeightVal">1.0</span>)</label>
-                <input type="range" id="lineHeightSlider" min="0.5" max="1.5" step="0.1" value="1.0">
+                <label>↕️ 위아래 줄 간격 (<span id="lineHeightVal">0.5</span>)</label>
+                <input type="range" id="lineHeightSlider" min="0.5" max="1.5" step="0.1" value="0.5">
             </div>
 
             <div>
@@ -194,8 +193,11 @@
     function createSingleSticker(textContent) {
         const strokeThickness = strokeSlider.value;
         const shadowDepth = shadowSlider.value;
-        const lineHeight = lineHeightSlider.value;
         const fontFamily = fontSelect.value;
+        
+        // ⭐ 핵심: 줄 간격을 찌그러뜨리지 않고, 아랫줄을 위로 당기는 여백 계산
+        const spacing = parseFloat(lineHeightSlider.value);
+        const marginEm = spacing - 1.2; 
 
         const wrapper = document.createElement('div');
         wrapper.className = 'sticker-wrapper';
@@ -206,23 +208,35 @@
         const stickerText = document.createElement('div');
         stickerText.className = 'sticker-text';
         stickerText.style.fontFamily = fontFamily;
-        stickerText.style.lineHeight = lineHeight;
+
+        // 엔터 기준으로 줄을 쪼개서 각각의 div로 만들어 합치기
+        const lines = textContent.split('\n');
+        let htmlContent = '';
+        lines.forEach((line, i) => {
+            const safeLine = line === '' ? '&nbsp;' : line;
+            if (i === 0) {
+                htmlContent += `<div style="line-height: 1.2;">${safeLine}</div>`;
+            } else {
+                htmlContent += `<div style="line-height: 1.2; margin-top: ${marginEm}em;">${safeLine}</div>`;
+            }
+        });
 
         const strokeLayer = document.createElement('div');
         strokeLayer.className = 'stroke-layer';
-        strokeLayer.innerText = textContent;
+        strokeLayer.innerHTML = htmlContent; // 쪼갠 줄들을 넣기
         strokeLayer.style.webkitTextStroke = `${strokeThickness}px ${strokeColor.value}`;
         strokeLayer.style.color = strokeColor.value; 
 
         const fillLayer = document.createElement('div');
         fillLayer.className = 'fill-layer';
-        fillLayer.innerText = textContent;
+        fillLayer.innerHTML = htmlContent; // 쪼갠 줄들을 넣기
         
         if (colorMode.value === 'solid') {
             fillLayer.style.background = 'none';
             fillLayer.style.color = textColor1.value;
             fillLayer.style.webkitTextFillColor = textColor1.value;
         } else {
+            // 그라데이션이 각 줄마다 온전히 다 들어가게 설정
             fillLayer.style.background = `linear-gradient(45deg, ${textColor1.value}, ${textColor2.value})`;
             fillLayer.style.webkitBackgroundClip = 'text';
             fillLayer.style.webkitTextFillColor = 'transparent';
@@ -235,7 +249,6 @@
         outputArea.appendChild(wrapper);
     }
 
-    // 처음 폰트가 로딩되는 시간을 위해 약간의 지연 후 렌더링
     setTimeout(updateSticker, 100);
     elements.forEach(el => el.addEventListener('input', updateSticker));
 </script>
