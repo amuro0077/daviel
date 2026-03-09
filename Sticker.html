@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>[다비엘] 글자 스티커 메이커 PRO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu&family=Gowun+Dodum&family=Jua&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+    <style>
+        /* ⭐ 카페24 동동체 웹 폰트 불러오기 (눈누) */
+        @font-face {
+            font-family: 'Cafe24Dongdong';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_twelve@1.1/Cafe24Dongdong.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        body { font-family: 'Jua', sans-serif; background-color: #fff9ea; text-align: center; padding: 20px; margin: 0; }
+        .container { background: white; max-width: 900px; margin: 0 auto; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #fdfdfd; padding: 20px; border-radius: 15px; border: 2px dashed #ffb86c; margin-bottom: 20px; text-align: left; }
+        .controls div { display: flex; flex-direction: column; }
+        label { font-size: 14px; color: #555; font-weight: bold; margin-bottom: 5px; }
+        textarea { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-family: inherit; font-size: 16px; height: 80px; resize: none; }
+        select, input[type="range"] { padding: 8px; border-radius: 8px; border: 1px solid #ddd; font-family: inherit; font-size: 15px; cursor: pointer; }
+        input[type="color"] { height: 40px; width: 100%; cursor: pointer; border: none; padding: 0; border-radius: 5px; }
+
+        .color-group { display: flex; gap: 10px; }
+        .color-group div { flex: 1; }
+
+        .preview-box { min-height: 250px; display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: center; gap: 30px; background: #f4f4f4; border-radius: 15px; border: 1px solid #eee; padding: 40px; }
+        
+        .sticker-wrapper { 
+            transition: filter 0.2s; 
+            padding: 10px; 
+        }
+
+        .sticker-text { 
+            position: relative; 
+            display: inline-block;
+            font-size: 80px; 
+            font-weight: bold; 
+            text-align: center;
+            white-space: pre-wrap; 
+            word-break: keep-all;
+        }
+
+        .stroke-layer {
+            position: relative;
+            z-index: 1;
+        }
+
+        .fill-layer {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 2;
+            pointer-events: none; 
+        }
+
+        .btn { padding: 15px 30px; border: none; border-radius: 10px; font-family: 'Jua'; font-size: 20px; cursor: pointer; margin: 5px; color: white; background: #ff9f43; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-green { background: #2ed573; }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; padding: 0; border: none; max-width: 100%; }
+            .preview-box { background: white; border: none; padding: 0; gap: 20px; justify-content: flex-start; }
+            .sticker-wrapper { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="no-print">
+    <h1>✂️ 다비엘 놀이터 글자 스티커 메이커 PRO</h1>
+    <div class="container">
+        <div class="controls">
+            <div>
+                <label>⌨️ 엔터(Enter)키 작동 방식</label>
+                <select id="enterMode">
+                    <option value="wrap">엔터 치면 👉 두 줄짜리 왕 스티커 1개 만들기</option>
+                    <option value="split">엔터 치면 👉 각각 따로 스티커로 조각내기</option>
+                </select>
+            </div>
+            
+            <div>
+                <label>🔠 글씨체</label>
+                <select id="fontSelect">
+                    <option value="'Cafe24Dongdong', sans-serif">카페24 동동 (통통하고 귀여움)</option>
+                    <option value="'Jua', sans-serif">주아체 (가장 예쁨)</option>
+                    <option value="'Gaegu', cursive">개구쟁이 (귀여움)</option>
+                    <option value="'Nanum Pen Script', cursive">나눔펜 (손글씨)</option>
+                    <option value="'Gowun Dodum', sans-serif">고운돋움 (단정함)</option>
+                </select>
+            </div>
+
+            <div style="grid-column: span 2;">
+                <label>✏️ 만들고 싶은 문구</label>
+                <textarea id="textInput" placeholder="함께 만드는 자리&#10;깊게 만들기">함께 만드는 자리&#10;깊게 만들기</textarea>
+            </div>
+
+            <div>
+                <label>🎨 색상 모드</label>
+                <select id="colorMode">
+                    <option value="solid">단색 (깔끔하게)</option>
+                    <option value="gradient" selected>투톤 그라데이션 (화려하게)</option>
+                </select>
+            </div>
+
+            <div class="color-group">
+                <div>
+                    <label>🖍️ 글자 색상 1</label>
+                    <input type="color" id="textColor1" value="#ff7f50">
+                </div>
+                <div id="color2Container">
+                    <label>🖍️ 글자 색상 2</label>
+                    <input type="color" id="textColor2" value="#ffbe76">
+                </div>
+            </div>
+
+            <div>
+                <label>⚪ 테두리 색상</label>
+                <input type="color" id="strokeColor" value="#ffffff">
+            </div>
+
+            <div>
+                <label>📏 테두리 두께 (<span id="strokeVal">15</span>px)</label>
+                <input type="range" id="strokeSlider" min="0" max="40" value="15">
+            </div>
+
+            <div>
+                <label>↕️ 위아래 줄 간격 (<span id="lineHeightVal">1.0</span>)</label>
+                <input type="range" id="lineHeightSlider" min="0.5" max="1.5" step="0.1" value="1.0">
+            </div>
+
+            <div>
+                <label>🌟 3D 입체 그림자 (<span id="shadowVal">5</span>단계)</label>
+                <input type="range" id="shadowSlider" min="0" max="15" value="5">
+            </div>
+        </div>
+        <div>
+            <button class="btn btn-green" onclick="window.print()">🖨️ 깔끔하게 인쇄하기</button>
+        </div>
+    </div>
+</div>
+
+<div class="container preview-box" id="outputArea" style="margin-top: 20px;"></div>
+
+<script>
+    const enterMode = document.getElementById('enterMode');
+    const textInput = document.getElementById('textInput');
+    const fontSelect = document.getElementById('fontSelect');
+    const colorMode = document.getElementById('colorMode');
+    const textColor1 = document.getElementById('textColor1');
+    const textColor2 = document.getElementById('textColor2');
+    const color2Container = document.getElementById('color2Container');
+    const strokeColor = document.getElementById('strokeColor');
+    const strokeSlider = document.getElementById('strokeSlider');
+    const lineHeightSlider = document.getElementById('lineHeightSlider');
+    const shadowSlider = document.getElementById('shadowSlider');
+    
+    const strokeVal = document.getElementById('strokeVal');
+    const lineHeightVal = document.getElementById('lineHeightVal');
+    const shadowVal = document.getElementById('shadowVal');
+    const outputArea = document.getElementById('outputArea');
+
+    const elements = [enterMode, textInput, fontSelect, colorMode, textColor1, textColor2, strokeColor, strokeSlider, lineHeightSlider, shadowSlider];
+
+    function updateSticker() {
+        if (colorMode.value === 'gradient') {
+            color2Container.style.display = 'flex';
+        } else {
+            color2Container.style.display = 'none';
+        }
+
+        outputArea.innerHTML = ''; 
+        
+        const mode = enterMode.value;
+        const rawText = textInput.value;
+        
+        strokeVal.innerText = strokeSlider.value;
+        lineHeightVal.innerText = lineHeightSlider.value;
+        shadowVal.innerText = shadowSlider.value;
+
+        if (mode === 'split') {
+            const lines = rawText.split('\n').filter(line => line.trim() !== '');
+            lines.forEach(line => createSingleSticker(line));
+        } else {
+            if (rawText.trim() !== '') {
+                createSingleSticker(rawText);
+            }
+        }
+    }
+
+    function createSingleSticker(textContent) {
+        const strokeThickness = strokeSlider.value;
+        const shadowDepth = shadowSlider.value;
+        const lineHeight = lineHeightSlider.value;
+        const fontFamily = fontSelect.value;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'sticker-wrapper';
+        if (shadowDepth > 0) {
+            wrapper.style.filter = `drop-shadow(${shadowDepth}px ${shadowDepth}px 0px rgba(0,0,0,0.15))`;
+        }
+
+        const stickerText = document.createElement('div');
+        stickerText.className = 'sticker-text';
+        stickerText.style.fontFamily = fontFamily;
+        stickerText.style.lineHeight = lineHeight;
+
+        const strokeLayer = document.createElement('div');
+        strokeLayer.className = 'stroke-layer';
+        strokeLayer.innerText = textContent;
+        strokeLayer.style.webkitTextStroke = `${strokeThickness}px ${strokeColor.value}`;
+        strokeLayer.style.color = strokeColor.value; 
+
+        const fillLayer = document.createElement('div');
+        fillLayer.className = 'fill-layer';
+        fillLayer.innerText = textContent;
+        
+        if (colorMode.value === 'solid') {
+            fillLayer.style.background = 'none';
+            fillLayer.style.color = textColor1.value;
+            fillLayer.style.webkitTextFillColor = textColor1.value;
+        } else {
+            fillLayer.style.background = `linear-gradient(45deg, ${textColor1.value}, ${textColor2.value})`;
+            fillLayer.style.webkitBackgroundClip = 'text';
+            fillLayer.style.webkitTextFillColor = 'transparent';
+        }
+
+        stickerText.appendChild(strokeLayer);
+        stickerText.appendChild(fillLayer);
+
+        wrapper.appendChild(stickerText);
+        outputArea.appendChild(wrapper);
+    }
+
+    // 처음 폰트가 로딩되는 시간을 위해 약간의 지연 후 렌더링
+    setTimeout(updateSticker, 100);
+    elements.forEach(el => el.addEventListener('input', updateSticker));
+</script>
+
+</body>
+</html>
